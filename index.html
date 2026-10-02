@@ -98,10 +98,7 @@
     </div>
 
     <script>
-        // ==========================================
-        // GANTI DENGAN URL WEB APP APPS SCRIPT ANDA
-        // ==========================================
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGMveJvPy9_a7ZYtAVX2mWFUkmXclru5gH9zigmb-9V5F-jZm0Db18rxSMNPkxmZFr/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwIRO6PyJU_CdKrgWNSI9n0dGKX67FlHtrQHNfaIHZqgTCBTGjf_J5LF4tmC8n8VJ8X/exec";
 
         let clipboardImageFile = null;
         let tasks = [];
@@ -172,6 +169,7 @@
                 }
 
                 const payload = {
+                    action: 'add',
                     id: 'TASK_' + Date.now(),
                     title,
                     desc,
@@ -195,6 +193,33 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `Simpan Tugas`;
+            }
+        }
+
+        async function toggleStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'ongoing' ? 'completed' : 'ongoing';
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'updateStatus', id: id, status: newStatus })
+                });
+                fetchTasks();
+            } catch (error) {
+                console.error("Gagal memperbarui status:", error);
+            }
+        }
+
+        async function deleteTask(id) {
+            if(confirm('Yakin ingin menghapus tugas ini?')) {
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'delete', id: id })
+                    });
+                    fetchTasks();
+                } catch (error) {
+                    console.error("Gagal menghapus tugas:", error);
+                }
             }
         }
 
@@ -235,6 +260,15 @@
                         <h3 class="font-bold text-slate-800 text-sm leading-snug">${task.title}</h3>
                         <p class="text-xs text-slate-500 mt-1 whitespace-pre-line">${task.desc || 'Tidak ada catatan.'}</p>
                     </div>
+                    <div class="flex justify-between items-center pt-3 border-t border-slate-100 mt-auto">
+                        <button onclick="toggleStatus('${task.id}', '${task.status}')" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer ${task.status === 'ongoing' ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/60' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60'}">
+                            <i class="fa-solid ${task.status === 'ongoing' ? 'fa-check mr-1' : 'fa-rotate-left mr-1'}"></i> 
+                            ${task.status === 'ongoing' ? 'Tandai Selesai' : 'Kembalikan ke Proses'}
+                        </button>
+                        <button onclick="deleteTask('${task.id}')" class="text-slate-400 hover:text-rose-600 text-xs p-1.5 transition cursor-pointer" title="Hapus Tugas">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
                 `;
 
                 if(task.status === 'ongoing') {
@@ -253,7 +287,6 @@
             if(completedCount === 0) completedContainer.innerHTML = `<div class="text-center py-12 text-slate-400 text-xs">Belum ada tugas yang selesai.</div>`;
         }
 
-        // Muat data saat halaman dibuka
         fetchTasks();
     </script>
 </body>
